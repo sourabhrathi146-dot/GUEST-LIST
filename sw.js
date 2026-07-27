@@ -1,6 +1,6 @@
 // Bump this version string every time index.html (or any cached file) changes,
 // otherwise phones will keep showing the old cached version.
-const CACHE_NAME = 'guest-list-cache-v2';
+const CACHE_NAME = 'guest-list-cache-v3';
 
 const FILES_TO_CACHE = [
   './',

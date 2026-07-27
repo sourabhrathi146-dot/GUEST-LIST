@@ -210,6 +210,12 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
 }
 .btn-breaker:disabled{opacity:0.4;cursor:not-allowed;}
 
+.btn-discard{
+  background:var(--red-bg);color:var(--red);flex:1;min-width:110px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-discard:disabled{opacity:0.4;cursor:not-allowed;}
+
 .btn-lang{
   background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);
   padding:12px 14px;font-weight:700;min-width:56px;
@@ -380,12 +386,15 @@ input[type=checkbox]{
   <div class="voice-row">
     <button class="btn-lang" id="langBtn" title="Switch voice language">EN</button>
     <button class="btn-mic" id="micBtn">🎤 Start Mic</button>
-    <button class="btn-breaker" id="breakerBtn" disabled>⏺ Next Name</button>
+  </div>
+  <div class="voice-row">
+    <button class="btn-breaker" id="breakerBtn" disabled>✓ Save Name</button>
+    <button class="btn-discard" id="discardBtn" disabled>✕ Discard</button>
   </div>
 
   <div class="live-caption" id="liveCaption"><span class="label">Hearing:</span> <span id="liveText"></span></div>
 
-  <div class="status" id="status">Tap "Start Mic" once, speak names one by one, and tap "Next Name" after each name to save it. Tap "Start Mic" again to stop.</div>
+  <div class="status" id="status">Tap "Start Mic" once. Speak ONE name, check the caption below, then tap "Save Name" — or "Discard" if it misheard. Tap "Start Mic" again to stop.</div>
 
   <table>
     <thead>
@@ -618,14 +627,18 @@ nameInput.addEventListener('keydown', e => {
   }
 });
 
-// ---------- Voice recognition (continuous + breaker) ----------
+// ---------- Voice recognition (segment-per-name, dedup-safe) ----------
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 let masterListening = false;   // true while mic is toggled "on" by the user
-let segmentBuffer = '';        // accumulated speech since the last "Next Name" tap
+let segmentBuffer = '';        // accumulated speech for the CURRENT name only
+let lastFinalIndex = -1;       // guards against the browser re-sending the same final result
+let sessionToken = 0;          // increments every (re)start; stale callbacks are ignored
 let currentLang = 'en-US';     // 'en-US' or 'hi-IN'
+let restarting = false;        // true during the brief stop->start gap after Save/Discard
 
 const LANGS = { 'en-US': 'EN', 'hi-IN': 'HI' };
+const discardBtn = document.getElementById('discardBtn');
 
 langBtn.addEventListener('click', () => {
   currentLang = currentLang === 'en-US' ? 'hi-IN' : 'en-US';
@@ -636,6 +649,8 @@ langBtn.addEventListener('click', () => {
     ? 'Voice language set to Hindi. Speak names in Hindi.'
     : 'Voice language set to English.';
   saveLangPref();
+  // Apply the new language cleanly by restarting the session if mic is on
+  if(masterListening) restartSession();
 });
 
 function saveLangPref(){
@@ -660,11 +675,16 @@ if(SpeechRecognition){
   recognition.interimResults = true;
 
   recognition.onresult = (event) => {
+    if(restarting) return; // ignore trailing results from a session we've already torn down
     let interim = '';
     for(let i = event.resultIndex; i < event.results.length; i++){
-      const transcript = event.results[i][0].transcript;
-      if(event.results[i].isFinal){
-        segmentBuffer += (segmentBuffer ? ' ' : '') + transcript.trim();
+      const result = event.results[i];
+      const transcript = result[0].transcript;
+      if(result.isFinal){
+        if(i > lastFinalIndex){       // only accept each final result ONCE
+          segmentBuffer += (segmentBuffer ? ' ' : '') + transcript.trim();
+          lastFinalIndex = i;
+        }
       } else {
         interim += transcript;
       }
@@ -677,7 +697,7 @@ if(SpeechRecognition){
   };
 
   recognition.onerror = (event) => {
-    if(event.error === 'no-speech') return; // silence gaps are normal in continuous mode
+    if(event.error === 'no-speech' || event.error === 'aborted') return; // normal gaps
     statusEl.className = 'status error';
     if(event.error === 'not-allowed' || event.error === 'permission-denied'){
       statusEl.textContent = 'Microphone permission denied. Allow mic access in your browser to use voice entry.';
@@ -688,20 +708,34 @@ if(SpeechRecognition){
   };
 
   recognition.onend = () => {
-    // Browsers auto-stop continuous recognition after a while — restart if still "on"
-    if(masterListening){
-      try{ recognition.start(); }catch(e){}
+    // Browsers auto-stop continuous recognition after a while — restart the SAME segment if still "on"
+    if(masterListening && !restarting){
+      const myToken = sessionToken;
+      try{
+        recognition.start();
+      }catch(e){
+        // Some browsers throw if start() is called too soon after stop; retry shortly.
+        setTimeout(() => { if(masterListening && sessionToken === myToken){ try{ recognition.start(); }catch(e2){} } }, 250);
+      }
     }
   };
 
+  function freshSession(){
+    // Wipes recognition's internal result list so old words can never bleed into the next name.
+    lastFinalIndex = -1;
+    segmentBuffer = '';
+    sessionToken++;
+  }
+
   function startListening(){
     masterListening = true;
-    segmentBuffer = '';
+    freshSession();
     micBtn.classList.add('listening');
     micBtn.textContent = '● Mic On — Tap to Stop';
     breakerBtn.disabled = false;
+    discardBtn.disabled = false;
     statusEl.className = 'status';
-    statusEl.textContent = 'Listening continuously. Speak a name, then tap "Next Name" to save it and start the next.';
+    statusEl.textContent = 'Listening. Speak ONE name, check the caption, then tap Save Name (or Discard if misheard).';
     try{ recognition.start(); }catch(e){}
   }
 
@@ -710,24 +744,48 @@ if(SpeechRecognition){
     micBtn.classList.remove('listening');
     micBtn.textContent = '🎤 Start Mic';
     breakerBtn.disabled = true;
+    discardBtn.disabled = true;
     liveCaption.classList.remove('show');
     liveText.textContent = '';
     try{ recognition.stop(); }catch(e){}
-    // Save any leftover buffered speech as a final name
-    if(segmentBuffer.trim()){
-      commitSegment();
-    }
+  }
+
+  // Fully stop and restart the recognition session so no leftover audio/results
+  // can carry over into the next name. This is what prevents duplication and bleed-over.
+  function restartSession(){
+    restarting = true;
+    freshSession();
+    try{ recognition.stop(); }catch(e){}
+    setTimeout(() => {
+      restarting = false;
+      if(masterListening){
+        try{ recognition.start(); }catch(e){}
+      }
+    }, 200);
   }
 
   function commitSegment(){
-    const name = titleCaseIfEnglish(segmentBuffer);
-    segmentBuffer = '';
+    const raw = segmentBuffer.trim();
+    if(raw){
+      const name = titleCaseIfEnglish(raw);
+      addGuest(name, recordingCategoryId);
+      statusEl.className = 'status';
+      statusEl.textContent = `Saved "${name}" to ${currentCategoryName(recordingCategoryId)}. Speak the next name.`;
+    } else {
+      statusEl.className = 'status';
+      statusEl.textContent = 'Nothing heard yet — speak a name first.';
+    }
     liveText.textContent = '';
     liveCaption.classList.remove('show');
-    if(name){
-      addGuest(name, recordingCategoryId);
-      statusEl.textContent = `Added "${name}" to ${currentCategoryName(recordingCategoryId)}. Keep speaking the next name.`;
-    }
+    restartSession();
+  }
+
+  function discardSegment(){
+    statusEl.className = 'status';
+    statusEl.textContent = 'Discarded — try speaking that name again.';
+    liveText.textContent = '';
+    liveCaption.classList.remove('show');
+    restartSession();
   }
 
   micBtn.addEventListener('click', () => {
@@ -735,8 +793,13 @@ if(SpeechRecognition){
   });
 
   breakerBtn.addEventListener('click', () => {
-    if(!masterListening) return;
+    if(!masterListening || restarting) return;
     commitSegment();
+  });
+
+  discardBtn.addEventListener('click', () => {
+    if(!masterListening || restarting) return;
+    discardSegment();
   });
 
 } else {
@@ -744,6 +807,7 @@ if(SpeechRecognition){
   micBtn.style.opacity = '0.5';
   micBtn.title = 'Voice input not supported in this browser';
   breakerBtn.disabled = true;
+  discardBtn.disabled = true;
   langBtn.disabled = true;
   statusEl.className = 'status error';
   statusEl.textContent = 'Voice entry isn\'t supported in this browser. On iPhone, type names instead; on Android, try Chrome for voice.';
