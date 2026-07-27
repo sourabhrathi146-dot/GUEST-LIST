@@ -22,6 +22,8 @@
   --green-bg:#E7F0EA;
   --red:#B5533C;
   --red-bg:#F6E7E2;
+  --blue:#3C6E9C;
+  --blue-bg:#E6EEF4;
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -33,25 +35,37 @@ body{
   color:var(--ink);
   padding-top:env(safe-area-inset-top);
   padding-bottom:env(safe-area-inset-bottom);
+  overflow-x:hidden;
 }
 
 .wrap{max-width:760px;margin:0 auto;padding:20px 16px 90px;}
 
+/* Header */
 .header{
   display:flex;
-  align-items:flex-end;
+  align-items:center;
   justify-content:space-between;
   border-bottom:3px solid var(--ink);
   padding-bottom:12px;
-  margin-bottom:18px;
+  margin-bottom:14px;
   gap:10px;
+}
+.header-left{display:flex;align-items:center;gap:10px;}
+.hamburger{
+  background:var(--ink);color:var(--paper);
+  border:none;border-radius:8px;
+  width:40px;height:40px;
+  font-size:1.15rem;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;padding:0;
 }
 .header h1{
   font-family:'Fraunces',serif;
   font-weight:700;
-  font-size:1.7rem;
+  font-size:1.5rem;
   margin:0;
   letter-spacing:-0.01em;
+  line-height:1.1;
 }
 .header .tag{
   font-family:'Inter',sans-serif;
@@ -66,18 +80,93 @@ body{
   white-space:nowrap;
 }
 
-.badge-count{
+.category-strip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:14px;
+  font-size:0.85rem;
+  color:var(--ink-soft);
+  flex-wrap:wrap;
+}
+.category-strip .current-cat{
   font-family:'Fraunces',serif;
   font-weight:700;
-  font-size:1.05rem;
   color:var(--gold-deep);
+  font-size:1rem;
 }
 
+/* Sidebar */
+.overlay{
+  position:fixed;inset:0;background:rgba(27,36,48,0.45);
+  opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:40;
+}
+.overlay.open{opacity:1;pointer-events:auto;}
+
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;
+  width:82%;max-width:300px;
+  background:var(--ink);
+  color:var(--paper);
+  z-index:50;
+  transform:translateX(-100%);
+  transition:transform .25s ease;
+  display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+.sidebar.open{transform:translateX(0);}
+.sidebar-header{
+  padding:18px 18px 14px;
+  border-bottom:1px solid rgba(250,247,242,0.15);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.sidebar-header h2{
+  font-family:'Fraunces',serif;font-size:1.15rem;margin:0;font-weight:700;
+}
+.close-sidebar{
+  background:none;border:none;color:var(--paper);font-size:1.3rem;cursor:pointer;padding:4px 8px;
+}
+.cat-list{flex:1;overflow-y:auto;padding:10px 10px;}
+.cat-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 12px;border-radius:9px;
+  margin-bottom:4px;cursor:pointer;
+  font-size:0.95rem;
+}
+.cat-item:hover{background:rgba(250,247,242,0.08);}
+.cat-item.active{background:var(--gold);color:var(--ink);font-weight:600;}
+.cat-item .cat-name{display:flex;align-items:center;gap:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cat-item .cat-count{
+  font-size:0.75rem;opacity:0.75;background:rgba(250,247,242,0.15);
+  padding:2px 7px;border-radius:12px;flex-shrink:0;
+}
+.cat-item.active .cat-count{background:rgba(27,36,48,0.2);}
+.cat-del{
+  background:none;border:none;color:var(--red);font-size:0.95rem;
+  padding:2px 6px;cursor:pointer;opacity:0.7;flex-shrink:0;
+}
+.cat-del:hover{opacity:1;}
+
+.add-cat-row{
+  display:flex;gap:6px;padding:12px 12px 16px;border-top:1px solid rgba(250,247,242,0.15);
+}
+.add-cat-row input{
+  flex:1;padding:10px 12px;border-radius:8px;border:1.5px solid rgba(250,247,242,0.25);
+  background:rgba(250,247,242,0.08);color:var(--paper);font-family:'Inter',sans-serif;font-size:0.9rem;
+}
+.add-cat-row input::placeholder{color:rgba(250,247,242,0.5);}
+.add-cat-row input:focus{outline:none;border-color:var(--gold);}
+.add-cat-row button{
+  background:var(--gold);color:var(--ink);border:none;border-radius:8px;
+  padding:10px 14px;font-weight:700;cursor:pointer;font-size:0.9rem;flex-shrink:0;
+}
+
+/* Controls */
 .controls{
   display:flex;
   gap:8px;
   flex-wrap:wrap;
-  margin-bottom:14px;
+  margin-bottom:10px;
 }
 input[type=text]{
   flex:1;
@@ -106,10 +195,38 @@ button:active{transform:scale(0.97);}
 button:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
 
 .btn-add{background:var(--ink);color:var(--paper);}
-.btn-mic{background:var(--gold);color:var(--ink);display:flex;align-items:center;gap:7px;}
-.btn-mic.listening{background:var(--red);color:#fff;animation:pulse 1.1s infinite;}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(181,83,60,0.45);}50%{box-shadow:0 0 0 8px rgba(181,83,60,0);}}
 .btn-pdf{background:transparent;color:var(--ink);border:1.5px solid var(--ink);}
+
+.voice-row{
+  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:stretch;
+}
+.btn-mic{background:var(--gold);color:var(--ink);display:flex;align-items:center;gap:7px;flex:1;min-width:150px;justify-content:center;}
+.btn-mic.listening{background:var(--red);color:#fff;animation:pulse 1.4s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(181,83,60,0.45);}50%{box-shadow:0 0 0 8px rgba(181,83,60,0);}}
+
+.btn-breaker{
+  background:var(--blue);color:#fff;flex:1;min-width:150px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-breaker:disabled{opacity:0.4;cursor:not-allowed;}
+
+.btn-lang{
+  background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);
+  padding:12px 14px;font-weight:700;min-width:56px;
+}
+
+.live-caption{
+  min-height:20px;
+  font-size:0.85rem;
+  color:var(--ink-soft);
+  background:var(--blue-bg);
+  border-radius:8px;
+  padding:8px 12px;
+  margin-bottom:10px;
+  display:none;
+}
+.live-caption.show{display:block;}
+.live-caption .label{font-weight:700;color:var(--blue);}
 
 .status{
   font-size:0.82rem;
@@ -139,6 +256,10 @@ tbody tr.present{background:var(--green-bg);}
 
 td{padding:9px 10px;font-size:0.92rem;}
 td.col-no{font-family:'Fraunces',serif;font-weight:700;color:var(--gold-deep);}
+.cat-tag{
+  display:inline-block;font-size:0.68rem;color:var(--blue);
+  background:var(--blue-bg);padding:2px 7px;border-radius:10px;margin-top:3px;
+}
 
 .name-input{
   border:none;
@@ -183,6 +304,13 @@ input[type=checkbox]{
   gap:6px;
 }
 
+.badge-count{
+  font-family:'Fraunces',serif;
+  font-weight:700;
+  font-size:1.05rem;
+  color:var(--gold-deep);
+}
+
 .install-banner{
   display:none;
   background:var(--ink);
@@ -201,7 +329,7 @@ input[type=checkbox]{
 
 @media print{
   body{background:#fff;}
-  .controls, .status, .btn-pdf, .del-btn, .footer-bar .hint, .install-banner{display:none !important;}
+  .controls, .status, .btn-pdf, .del-btn, .footer-bar .hint, .install-banner, .voice-row, .live-caption, .hamburger{display:none !important;}
   .wrap{max-width:100%;padding:0;}
   table{box-shadow:none;}
   thead th{background:#1B2430 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#fff !important;}
@@ -210,11 +338,32 @@ input[type=checkbox]{
 </style>
 </head>
 <body>
+
+<div class="overlay" id="overlay"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>Categories</h2>
+    <button class="close-sidebar" id="closeSidebar">✕</button>
+  </div>
+  <div class="cat-list" id="catList"></div>
+  <div class="add-cat-row">
+    <input type="text" id="newCatInput" placeholder="New category name…">
+    <button id="addCatBtn">+ Add</button>
+  </div>
+</div>
+
 <div class="wrap">
 
   <div class="header">
-    <h1>Guest List</h1>
+    <div class="header-left">
+      <button class="hamburger" id="hamburgerBtn" title="Categories">☰</button>
+      <h1>Guest List</h1>
+    </div>
     <span class="tag">Voice Entry · Print Ready</span>
+  </div>
+
+  <div class="category-strip">
+    Recording into: <span class="current-cat" id="currentCatLabel">General</span>
   </div>
 
   <div class="install-banner" id="installBanner">
@@ -225,11 +374,18 @@ input[type=checkbox]{
   <div class="controls">
     <input type="text" id="nameInput" placeholder="Type a guest name and press Enter…" autocomplete="off">
     <button class="btn-add" id="addBtn">+ Add</button>
-    <button class="btn-mic" id="micBtn">🎤 Speak Name</button>
-    <button class="btn-pdf" id="pdfBtn">⭳ Export to PDF</button>
+    <button class="btn-pdf" id="pdfBtn">⭳ PDF</button>
   </div>
 
-  <div class="status" id="status">Tap "Speak Name" and say a guest's name — it'll be added automatically.</div>
+  <div class="voice-row">
+    <button class="btn-lang" id="langBtn" title="Switch voice language">EN</button>
+    <button class="btn-mic" id="micBtn">🎤 Start Mic</button>
+    <button class="btn-breaker" id="breakerBtn" disabled>⏺ Next Name</button>
+  </div>
+
+  <div class="live-caption" id="liveCaption"><span class="label">Hearing:</span> <span id="liveText"></span></div>
+
+  <div class="status" id="status">Tap "Start Mic" once, speak names one by one, and tap "Next Name" after each name to save it. Tap "Start Mic" again to stop.</div>
 
   <table>
     <thead>
@@ -251,61 +407,169 @@ input[type=checkbox]{
 </div>
 
 <script>
-const STORAGE_KEY = 'guestListData';
-let guests = [];
+const STORAGE_KEY = 'guestListDataV2';
+
+let categories = [{ id: 'general', name: 'General' }];
+let guests = []; // {id, name, present, categoryId}
 let idCounter = 1;
+let catIdCounter = 1;
+let selectedView = 'general';       // 'all' or a category id — controls what the table shows
+let recordingCategoryId = 'general'; // where new guests (voice/typed) get added
 
 function loadData(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
+      categories = (parsed.categories && parsed.categories.length) ? parsed.categories : categories;
       guests = parsed.guests || [];
       idCounter = parsed.idCounter || (guests.length + 1);
+      catIdCounter = parsed.catIdCounter || (categories.length + 1);
+      selectedView = parsed.selectedView || 'general';
+      recordingCategoryId = parsed.recordingCategoryId || (categories[0] ? categories[0].id : 'general');
+      if(!categories.find(c => c.id === recordingCategoryId)) recordingCategoryId = categories[0].id;
+      if(selectedView !== 'all' && !categories.find(c => c.id === selectedView)) selectedView = categories[0].id;
     }
   }catch(e){ console.error('Load failed', e); }
 }
 function saveData(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ guests, idCounter }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories, guests, idCounter, catIdCounter, selectedView, recordingCategoryId }));
   }catch(e){ console.error('Save failed', e); }
 }
 
+// ---------- DOM refs ----------
 const tbody = document.getElementById('tbody');
 const nameInput = document.getElementById('nameInput');
 const addBtn = document.getElementById('addBtn');
 const micBtn = document.getElementById('micBtn');
+const breakerBtn = document.getElementById('breakerBtn');
+const langBtn = document.getElementById('langBtn');
 const pdfBtn = document.getElementById('pdfBtn');
 const statusEl = document.getElementById('status');
 const countTotal = document.getElementById('countTotal');
 const countPresent = document.getElementById('countPresent');
+const currentCatLabel = document.getElementById('currentCatLabel');
+const liveCaption = document.getElementById('liveCaption');
+const liveText = document.getElementById('liveText');
+
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const closeSidebar = document.getElementById('closeSidebar');
+const catList = document.getElementById('catList');
+const newCatInput = document.getElementById('newCatInput');
+const addCatBtn = document.getElementById('addCatBtn');
+
+// ---------- Sidebar open/close ----------
+function openSidebar(){ sidebar.classList.add('open'); overlay.classList.add('open'); }
+function closeSidebarFn(){ sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+hamburgerBtn.addEventListener('click', openSidebar);
+closeSidebar.addEventListener('click', closeSidebarFn);
+overlay.addEventListener('click', closeSidebarFn);
+
+// ---------- Categories ----------
+function renderCategories(){
+  catList.innerHTML = '';
+
+  const allItem = document.createElement('div');
+  allItem.className = 'cat-item' + (selectedView === 'all' ? ' active' : '');
+  allItem.innerHTML = `<span class="cat-name">📋 All Guests</span><span class="cat-count">${guests.length}</span>`;
+  allItem.addEventListener('click', () => { selectedView = 'all'; saveData(); render(); closeSidebarFn(); });
+  catList.appendChild(allItem);
+
+  categories.forEach(cat => {
+    const count = guests.filter(g => g.categoryId === cat.id).length;
+    const item = document.createElement('div');
+    item.className = 'cat-item' + (selectedView === cat.id ? ' active' : '');
+    item.innerHTML = `
+      <span class="cat-name">🏷️ ${escapeHtml(cat.name)}</span>
+      <span style="display:flex;align-items:center;gap:4px;">
+        <span class="cat-count">${count}</span>
+        ${categories.length > 1 ? `<button class="cat-del" data-id="${cat.id}" title="Delete category">✕</button>` : ''}
+      </span>`;
+    item.querySelector('.cat-name').addEventListener('click', () => {
+      selectedView = cat.id;
+      recordingCategoryId = cat.id;
+      saveData(); render(); closeSidebarFn();
+    });
+    const delBtn = item.querySelector('.cat-del');
+    if(delBtn){
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteCategory(cat.id);
+      });
+    }
+    catList.appendChild(item);
+  });
+}
+
+function deleteCategory(catId){
+  if(categories.length <= 1) return;
+  const fallback = categories.find(c => c.id !== catId);
+  guests.forEach(g => { if(g.categoryId === catId) g.categoryId = fallback.id; });
+  categories = categories.filter(c => c.id !== catId);
+  if(recordingCategoryId === catId) recordingCategoryId = fallback.id;
+  if(selectedView === catId) selectedView = fallback.id;
+  saveData();
+  renderCategories();
+  render();
+}
+
+addCatBtn.addEventListener('click', () => addCategory());
+newCatInput.addEventListener('keydown', e => { if(e.key === 'Enter') addCategory(); });
+function addCategory(){
+  const name = newCatInput.value.trim();
+  if(!name) return;
+  const id = 'cat' + (catIdCounter++);
+  categories.push({ id, name });
+  recordingCategoryId = id;
+  selectedView = id;
+  newCatInput.value = '';
+  saveData();
+  renderCategories();
+  render();
+}
+
+// ---------- Guests table ----------
+function currentCategoryName(id){
+  const c = categories.find(x => x.id === id);
+  return c ? c.name : 'General';
+}
 
 function render(){
+  renderCategories();
+  currentCatLabel.textContent = currentCategoryName(recordingCategoryId);
+
+  const visibleGuests = selectedView === 'all'
+    ? guests
+    : guests.filter(g => g.categoryId === selectedView);
+
   tbody.innerHTML = '';
-  if(guests.length === 0){
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No guests added yet. Speak or type a name to begin.</td></tr>';
+  if(visibleGuests.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No guests here yet. Speak or type a name to begin.</td></tr>';
   } else {
-    guests.forEach((g, idx) => {
+    visibleGuests.forEach((g, idx) => {
       const tr = document.createElement('tr');
       tr.className = g.present ? 'present' : '';
+      const catTag = selectedView === 'all' ? `<div class="cat-tag">${escapeHtml(currentCategoryName(g.categoryId))}</div>` : '';
       tr.innerHTML = `
         <td class="col-no">${idx + 1}</td>
-        <td><input class="name-input" type="text" value="${escapeHtml(g.name)}" data-id="${g.id}"></td>
+        <td><input class="name-input" type="text" value="${escapeHtml(g.name)}" data-id="${g.id}">${catTag}</td>
         <td class="col-check"><input type="checkbox" data-id="${g.id}" ${g.present ? 'checked' : ''}></td>
         <td class="col-del"><button class="del-btn" data-id="${g.id}" title="Remove">✕</button></td>
       `;
       tbody.appendChild(tr);
     });
   }
-  countTotal.textContent = guests.length;
-  countPresent.textContent = guests.filter(g => g.present).length;
+  countTotal.textContent = visibleGuests.length;
+  countPresent.textContent = visibleGuests.filter(g => g.present).length;
 
   tbody.querySelectorAll('.name-input').forEach(inp => {
     inp.addEventListener('input', e => {
       const id = Number(e.target.dataset.id);
       const g = guests.find(x => x.id === id);
       if(g) g.name = e.target.value;
-      countTotal.textContent = guests.length;
       saveData();
     });
   });
@@ -334,88 +598,155 @@ function escapeHtml(str){
   return d.innerHTML;
 }
 
-function addGuest(name){
+function addGuest(name, categoryId){
   const trimmed = name.trim();
   if(!trimmed) return;
-  guests.push({ id: idCounter++, name: trimmed, present: false });
+  guests.push({ id: idCounter++, name: trimmed, present: false, categoryId: categoryId || recordingCategoryId });
   saveData();
   render();
 }
 
 addBtn.addEventListener('click', () => {
-  addGuest(nameInput.value);
+  addGuest(nameInput.value, recordingCategoryId);
   nameInput.value = '';
   nameInput.focus();
 });
 nameInput.addEventListener('keydown', e => {
   if(e.key === 'Enter'){
-    addGuest(nameInput.value);
+    addGuest(nameInput.value, recordingCategoryId);
     nameInput.value = '';
   }
 });
 
-// ---- Voice recognition ----
+// ---------- Voice recognition (continuous + breaker) ----------
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
-let listening = false;
+let masterListening = false;   // true while mic is toggled "on" by the user
+let segmentBuffer = '';        // accumulated speech since the last "Next Name" tap
+let currentLang = 'en-US';     // 'en-US' or 'hi-IN'
+
+const LANGS = { 'en-US': 'EN', 'hi-IN': 'HI' };
+
+langBtn.addEventListener('click', () => {
+  currentLang = currentLang === 'en-US' ? 'hi-IN' : 'en-US';
+  langBtn.textContent = LANGS[currentLang];
+  if(recognition) recognition.lang = currentLang;
+  statusEl.className = 'status';
+  statusEl.textContent = currentLang === 'hi-IN'
+    ? 'Voice language set to Hindi. Speak names in Hindi.'
+    : 'Voice language set to English.';
+  saveLangPref();
+});
+
+function saveLangPref(){
+  try{ localStorage.setItem('guestListLang', currentLang); }catch(e){}
+}
+function loadLangPref(){
+  try{
+    const saved = localStorage.getItem('guestListLang');
+    if(saved && LANGS[saved]){ currentLang = saved; langBtn.textContent = LANGS[saved]; }
+  }catch(e){}
+}
+
+function titleCaseIfEnglish(text){
+  if(currentLang === 'hi-IN') return text.trim();
+  return text.trim().replace(/\b\w/g, c => c.toUpperCase());
+}
 
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  recognition.onstart = () => {
-    listening = true;
-    micBtn.classList.add('listening');
-    micBtn.textContent = '● Listening…';
-    statusEl.className = 'status';
-    statusEl.textContent = 'Listening — say a guest\'s name now.';
-  };
+  recognition.lang = currentLang;
+  recognition.continuous = true;
+  recognition.interimResults = true;
 
   recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    const cleaned = transcript.trim().replace(/\.$/, '');
-    const name = cleaned.replace(/\b\w/g, c => c.toUpperCase());
-    addGuest(name);
-    statusEl.textContent = `Added "${name}". Tap the mic to add another.`;
+    let interim = '';
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      const transcript = event.results[i][0].transcript;
+      if(event.results[i].isFinal){
+        segmentBuffer += (segmentBuffer ? ' ' : '') + transcript.trim();
+      } else {
+        interim += transcript;
+      }
+    }
+    const preview = (segmentBuffer + ' ' + interim).trim();
+    if(preview){
+      liveCaption.classList.add('show');
+      liveText.textContent = preview;
+    }
   };
 
   recognition.onerror = (event) => {
+    if(event.error === 'no-speech') return; // silence gaps are normal in continuous mode
     statusEl.className = 'status error';
     if(event.error === 'not-allowed' || event.error === 'permission-denied'){
       statusEl.textContent = 'Microphone permission denied. Allow mic access in your browser to use voice entry.';
-    } else if(event.error === 'no-speech'){
-      statusEl.textContent = 'Didn\'t catch that — no speech detected. Try again.';
+      stopListening();
     } else {
       statusEl.textContent = 'Voice recognition error: ' + event.error + '. You can still type names manually.';
     }
   };
 
   recognition.onend = () => {
-    listening = false;
-    micBtn.classList.remove('listening');
-    micBtn.textContent = '🎤 Speak Name';
+    // Browsers auto-stop continuous recognition after a while — restart if still "on"
+    if(masterListening){
+      try{ recognition.start(); }catch(e){}
+    }
   };
 
-  micBtn.addEventListener('click', () => {
-    if(listening){
-      recognition.stop();
-    } else {
-      try{
-        recognition.start();
-      }catch(err){
-        statusEl.className = 'status error';
-        statusEl.textContent = 'Could not start microphone. Try again in a moment.';
-      }
+  function startListening(){
+    masterListening = true;
+    segmentBuffer = '';
+    micBtn.classList.add('listening');
+    micBtn.textContent = '● Mic On — Tap to Stop';
+    breakerBtn.disabled = false;
+    statusEl.className = 'status';
+    statusEl.textContent = 'Listening continuously. Speak a name, then tap "Next Name" to save it and start the next.';
+    try{ recognition.start(); }catch(e){}
+  }
+
+  function stopListening(){
+    masterListening = false;
+    micBtn.classList.remove('listening');
+    micBtn.textContent = '🎤 Start Mic';
+    breakerBtn.disabled = true;
+    liveCaption.classList.remove('show');
+    liveText.textContent = '';
+    try{ recognition.stop(); }catch(e){}
+    // Save any leftover buffered speech as a final name
+    if(segmentBuffer.trim()){
+      commitSegment();
     }
+  }
+
+  function commitSegment(){
+    const name = titleCaseIfEnglish(segmentBuffer);
+    segmentBuffer = '';
+    liveText.textContent = '';
+    liveCaption.classList.remove('show');
+    if(name){
+      addGuest(name, recordingCategoryId);
+      statusEl.textContent = `Added "${name}" to ${currentCategoryName(recordingCategoryId)}. Keep speaking the next name.`;
+    }
+  }
+
+  micBtn.addEventListener('click', () => {
+    if(masterListening) stopListening(); else startListening();
   });
+
+  breakerBtn.addEventListener('click', () => {
+    if(!masterListening) return;
+    commitSegment();
+  });
+
 } else {
   micBtn.disabled = true;
   micBtn.style.opacity = '0.5';
   micBtn.title = 'Voice input not supported in this browser';
+  breakerBtn.disabled = true;
+  langBtn.disabled = true;
   statusEl.className = 'status error';
-  statusEl.textContent = 'Voice entry isn\'t supported in this browser. On iPhone, use Chrome/Safari typing instead; on Android, try Chrome for voice.';
+  statusEl.textContent = 'Voice entry isn\'t supported in this browser. On iPhone, type names instead; on Android, try Chrome for voice.';
 }
 
 // ---- PDF export (print) ----
@@ -454,6 +785,7 @@ if('serviceWorker' in navigator){
   });
 }
 
+loadLangPref();
 loadData();
 render();
 </script>
